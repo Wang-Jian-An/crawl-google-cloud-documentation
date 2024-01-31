@@ -52,7 +52,7 @@ def crawl_main_content(
     
     # req_text = requests.get(one_main_url)
     # req_text = BeautifulSoup(req_text.text, "html.parser")
-    req_text = request_and_decode_html(one_url = one_url)
+    req_text = request_and_decode_html(one_url = one_main_url)
     req_text = req_text.find(
         "article", 
         {
