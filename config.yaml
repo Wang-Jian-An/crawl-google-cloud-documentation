@@ -1,13 +1,9 @@
 gcloud_data_path: ./gcloud-document
 url: 
-  - https://cloud.google.com/compute/docs/instances
-  - https://cloud.google.com/sql/docs/introduction
-  - https://cloud.google.com/firestore/docs/overview
-  - https://cloud.google.com/memorystore/docs/cluster/memorystore-for-redis-cluster-overview
-  - https://cloud.google.com/run/docs/overview/what-is-cloud-run
-  - https://cloud.google.com/kubernetes-engine/docs/concepts/kubernetes-engine-overview
-  - https://cloud.google.com/vertex-ai/docs/start/introduction-unified-platform
+  - https://cloud.google.com/storage/docs/introduction
   - https://cloud.google.com/bigquery/docs/introduction
-  - https://cloud.google.com/confidential-computing/confidential-vm/docs/create-confidential-vm-instance
-  - https://cloud.google.com/vmware-engine/docs/overview
-  - https://cloud.google.com/recommender/docs/how-to
+  - https://cloud.google.com/run/docs/overview/what-is-cloud-run
+  - https://cloud.google.com/kubernetes-engine/docs/deploy-app-cluster
+  - https://cloud.google.com/vertex-ai/docs
+  - https://cloud.google.com/looker/docs/intro
+  - https://cloud.google.com/apigee/docs/api-platform/get-started/what-apigee
