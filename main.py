@@ -1,6 +1,9 @@
 import os
 import yaml
 import requests
+import itertools
+import bs4
+from pprint import pprint
 from bs4 import BeautifulSoup
 
 base_url = "https://cloud.google.com"
@@ -25,21 +28,53 @@ def crawl_side_list(
     <Explanation TBD>
     """
 
-    # req_text = requests.get(one_url)
-    # req_text = BeautifulSoup(req_text.text, "html.parser")
+    def crawl_item(
+        html_text
+    ):
+        
+        if "devsite-nav-heading" in html_text.get("class"):
+            return []
+        elif "devsite-nav-expandable" in html_text.get("class"):
+            html_text = html_text.find("ul", {"class": "devsite-nav-section"})
+            return [
+                crawl_item(html_text = i) for i in html_text.children
+            ]
+        else:
+            html_text = html_text.find("a")
+            href = html_text.get("href")
+            item_name = html_text.find("span").text
+            return {
+                "name": item_name,
+                "href": href
+            }
+
     req_text = request_and_decode_html(one_url = one_url)
     left_side_list = req_text.find("ul", {"class": "devsite-nav-list", "menu": "_book"})
-    left_side_list = left_side_list.find_all("a", {"class": "devsite-nav-title gc-analytics-event"})
 
-    left_side_list_href = [
-        base_url + i.get("href")
-        for i in left_side_list
+    left_side = [
+        crawl_item(
+            html_text = i
+        )
+        for i in left_side_list.children
+        if not(isinstance(i, bs4.element.NavigableString))
     ]
-    left_side_list_name = [
-        i.find("span").text 
-        for i in left_side_list
-    ]
-    return left_side_list_name, left_side_list_href
+    
+    final_left_side = list()
+    for i in left_side:
+        if type(i) == dict:
+            final_left_side.append(i)
+        elif type(i) == list:
+            if i.__len__() == 1:
+                i = i[0].copy()
+            for j in i:
+                if type(j) == dict:
+                    final_left_side.append(j)
+                else:
+                    if i.__len__() == 1:
+                        i = i[0].copy()
+                    for k in j:
+                        final_left_side.append(k)
+    return final_left_side
 
 # In[] 主要內容
 def crawl_main_content(
@@ -109,18 +144,19 @@ def main():
     """
 
     one_url = config["url"][1]
-    left_side_list_name, left_side_list_href = crawl_side_list(one_url = one_url)
+    left_side = crawl_side_list(one_url = one_url)
+    # pprint(left_side)
 
-    for one_main_name, one_main_url in zip(
-        left_side_list_name, 
-        left_side_list_href
-    ):
-        text_result = crawl_main_content(one_main_url = one_main_url)
-        store_text(
-            cloud = "gcloud",
-            file_name = one_main_name,
-            text = text_result
-        )
+    # for one_main_name, one_main_url in zip(
+    #     left_side_list_name, 
+    #     left_side_list_href
+    # ):
+    #     text_result = crawl_main_content(one_main_url = one_main_url)
+    #     store_text(
+    #         cloud = "gcloud",
+    #         file_name = one_main_name,
+    #         text = text_result
+    #     )
     return 
 
 
