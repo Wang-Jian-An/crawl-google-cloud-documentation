@@ -2,6 +2,9 @@ gcloud_data_path: ./gcloud-document
 url: 
   - https://cloud.google.com/compute/docs/instances
   - https://cloud.google.com/sql/docs/introduction
+  - https://cloud.google.com/sql/docs/mysql/introduction
+  - https://cloud.google.com/sql/docs/postgres/introduction
+  - https://cloud.google.com/sql/docs/sqlserver/introduction
   - https://cloud.google.com/firestore/docs/overview
   - https://cloud.google.com/memorystore/docs/cluster/memorystore-for-redis-cluster-overview
   - https://cloud.google.com/run/docs/overview/what-is-cloud-run
