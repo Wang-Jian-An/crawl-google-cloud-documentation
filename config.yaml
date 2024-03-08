@@ -14,3 +14,29 @@ url:
   - https://cloud.google.com/confidential-computing/confidential-vm/docs/create-confidential-vm-instance
   - https://cloud.google.com/vmware-engine/docs/overview
   - https://cloud.google.com/recommender/docs/how-to
+  - https://cloud.google.com/vertex-ai/docs/generative-ai/learn/overview
+  - https://cloud.google.com/dialogflow/cx/docs
+  - https://cloud.google.com/dialogflow/es/docs
+  - https://cloud.google.com/generative-ai-app-builder/docs/introduction
+  - https://cloud.google.com/text-to-speech/docs/quickstarts
+  - https://cloud.google.com/document-ai/docs/overview
+  - https://cloud.google.com/translate/docs/overview
+  - https://cloud.google.com/vision-ai/docs/overview
+  - https://cloud.google.com/looker/docs/intro
+  - https://cloud.google.com/translate/automl/docs/
+  - https://cloud.google.com/speech-to-text/docs/how-to
+  - https://cloud.google.com/bigquery/docs/manage-open-source-metadata
+  - https://cloud.google.com/dataform/docs/overview
+  - https://cloud.google.com/dataplex/docs/introduction
+  - https://cloud.google.com/scheduler/docs/overview
+  - https://cloud.google.com/dataproc-serverless/docs/overview
+  - https://cloud.google.com/data-fusion/docs/concepts/overview
+  - https://cloud.google.com/composer/docs/run-apache-airflow-dag
+  - https://cloud.google.com/composer/docs/composer-2/run-apache-airflow-dag
+  - https://cloud.google.com/tasks/docs/dual-overview
+  - https://cloud.google.com/apigee/docs/api-platform/get-started/what-apigee
+  - https://cloud.google.com/application-integration/docs/overview
+  - https://cloud.google.com/shell/docs/quickstart
+  - https://cloud.google.com/compute/docs/apis
+  - https://cloud.google.com/endpoints/docs
+  - https://cloud.google.com/iam/docs/overview
