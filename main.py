@@ -1,11 +1,17 @@
 import os
 import io
+import time
+import tqdm
 import yaml
+import random
 import requests
 import pandas as pd
 from pprint import pprint
 import bs4
 from bs4 import BeautifulSoup
+
+from selenium.webdriver.common.by import By
+from utils.crawl_via_selenium import crawl_Chrome
 
 base_url = "https://cloud.google.com"
 with open("config.yaml", encoding = "utf-8") as f:
@@ -18,25 +24,23 @@ def main():
     <Explanation TBD>
     """
 
-    one_url = config["url"][1]
-    each_document = crawl_side_list(one_url = one_url)
+    # one_url = "https://cloud.google.com/sql/docs/mysql/backup-recovery/backups#what_backups_provide"
+    for one_url in config["url"]:
+        try:
+            each_document = crawl_side_list(one_url = one_url)
 
-    one_href = "https://cloud.google.com/sql/docs/feature_support"
-    response = crawl_main_content(
-        one_main_url = one_href
-    )
-    print(response)
-
-    # for one_main_name, one_main_url in zip(
-    #     left_side_list_name, 
-    #     left_side_list_href
-    # ):
-    #     text_result = crawl_main_content(one_main_url = one_main_url)
-    #     store_text(
-    #         cloud = "gcloud",
-    #         file_name = one_main_name,
-    #         text = text_result
-    #     )
+            for one_document in tqdm.tqdm(each_document):
+    
+                text_result = crawl_main_content(one_main_url = one_url)
+                store_text(
+                    cloud = "gcloud",
+                    file_name = "About Cloud SQL backups".replace("/", "_"),
+                    text = text_result
+                )
+                time.sleep(random.random())
+                print(one_document)
+        except: 
+            print(one_url)
     return 
 
 # In[] 共用函式
@@ -81,7 +85,9 @@ def crawl_side_list(
     ]
 
 # In[] 主要內容
+@crawl_Chrome
 def crawl_main_content(
+    driver, 
     one_main_url: str
 ):
     
@@ -92,7 +98,7 @@ def crawl_main_content(
     def get_content(
         html_text
     ):
-        
+
         if html_text.name == "h2":
             response = "## " + html_text.get_text()
         elif html_text.name == "h3":
@@ -128,25 +134,26 @@ def crawl_main_content(
             response = html_text.get_text()
         return response.rstrip().lstrip()
 
-    print(one_main_url)
-    req_text = request_and_decode_html(one_url = one_main_url)
-    req_text = req_text.find(
-        "article", 
-        {
-            "class": "devsite-article"
-        }
-    )
+    driver.get(one_main_url)
+    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+    req_text = driver.find_element(By.CLASS_NAME, "devsite-article")
+    req_text = req_text.get_attribute("outerHTML")
+    req_text = BeautifulSoup(req_text, "html.parser")
     h1_title = req_text.find("h1").text
 
     req_text = req_text.find("div", {"class": "devsite-article-body clearfix".split(" ")})
+
     text_result = [
         get_content(
             html_text = i
         )
         for i in req_text.children if not(isinstance(i, bs4.element.NavigableString)) and not(i is None)
     ]
-    text_result = "\n".join(text_result).replace("\n\n", "\n").rstrip().lstrip()
-    return h1_title + "\n" + text_result
+    text_result = "\n".join(text_result).replace("##", "\n##").replace("###", "\n###").replace("###", "\n###").rstrip().lstrip()
+    return "# " + h1_title + "\n" + text_result
+
+one_url = "https://cloud.google.com/sql/docs/sqlserver/connect-instance-cloud-shell#gcloud"
+print(crawl_main_content(one_main_url = one_url))
 
 # In[] 檔案儲存
 def store_text(
@@ -165,7 +172,7 @@ def store_text(
     elif cloud == "azure":
         pass
 
-    with open(os.path.join(data_path, file_name), "w") as f:
+    with open(os.path.join(data_path, f"{file_name}.txt"), "w") as f:
         f.write(text)
     return 
 
