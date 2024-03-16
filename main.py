@@ -27,19 +27,23 @@ def main():
 
     # one_url = "https://cloud.google.com/sql/docs/mysql/backup-recovery/backups#what_backups_provide"
     link_map_title_dict = dict()
-    error_dict = dict()
+    error_content_dict = dict()
+    error_aside_dict = dict()
     for one_url in config["url"][:1]:
         try:
             each_document = crawl_side_list(one_url = one_url)
 
-            with tqdm.tqdm(each_document) as t:
+            with tqdm.tqdm(each_document[330:]) as t:
                 for one_document in t:
                     try:
-                        title, text_result = crawl_main_content(one_main_url = one_document["href"])
+                        guide, title, text_result = crawl_main_content(one_main_url = one_document["href"])
                         json_content = text_preprocessing(
                             title = title,
                             text = text_result,
                             link = one_url
+                        )
+                        json_content.update(
+                            guide = guide
                         )
                         store_text(
                             cloud = "gcloud",
@@ -55,17 +59,22 @@ def main():
                         )
                         time.sleep(random.random())
                     except Exception as e:
-                        error_dict[one_document["name"]] = {
+                        error_content_dict[one_document["name"]] = {
                             "href": one_document["href"],
-                            "error": e
+                            "error": e.__str__()
                         }
                         store_text(
                             cloud = "./",
                             file_name = "error_message.json",
-                            text = link_map_title_dict
+                            text = error_content_dict
                         )
-        except: 
-            print(one_url)
+        except Exception as e: 
+            error_aside_dict[one_url] = e.__str__()
+            store_text(
+                cloud = "./",
+                file_name = "error_aside_message.json",
+                text = error_aside_dict
+            )            
     return 
 
 # In[] 共用函式
@@ -231,8 +240,9 @@ def crawl_main_content(
     req_text = req_text.get_attribute("outerHTML")
     req_text = BeautifulSoup(req_text, "html.parser")
 
-    guide_page = req_text.find("ul", {"class": "devsite-breadcrumb-list"})
-    guide_page = list(guide_page.children)[2].get_text().replace("\n", "").lstrip().rstrip() 
+    guide_page = req_text.find("div", {"class": "devsite-article-meta nocontent".split(" ")})
+    guide_page = guide_page.find("ul", {"class": "devsite-breadcrumb-list"})
+    guide_page = [i for i in guide_page.children if not(i == "\n")][2].get_text().replace("\n", "").lstrip().rstrip() 
 
     h1_title = "{} - {}".format(
         guide_page, 
@@ -264,6 +274,7 @@ def crawl_main_content(
     for one_pair in replace_pairs:
         text_result = text_result.replace(one_pair[0], one_pair[1])
     return (
+        guide_page, 
         h1_title, 
         "# " + h1_title + "\n" + text_result.rstrip().lstrip()
     )
