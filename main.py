@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup
 
 from selenium.webdriver.common.by import By
 from utils.crawl_via_selenium import crawl_Chrome
+from monitor.folder import folder_exists
 
 base_url = "https://cloud.google.com"
 with open("config.yaml", encoding = "utf-8") as f:
@@ -29,11 +30,11 @@ def main():
     link_map_title_dict = dict()
     error_content_dict = dict()
     error_aside_dict = dict()
-    for one_url in config["url"][:1]:
+    for one_url in config["url"]:
         try:
             each_document = crawl_side_list(one_url = one_url)
 
-            with tqdm.tqdm(each_document[330:]) as t:
+            with tqdm.tqdm(each_document) as t:
                 for one_document in t:
                     try:
                         guide, title, text_result = crawl_main_content(one_main_url = one_document["href"])
@@ -46,14 +47,16 @@ def main():
                             guide = guide
                         )
                         store_text(
-                            cloud = "gcloud",
+                            folder_path = "./Google-Cloud-Platform-Document/{}".format(
+                                guide
+                            ),
                             file_name = "{}.json".format(title.replace("/", "_")),
                             text = json_content
                         )
 
                         link_map_title_dict[one_document["href"]] = title
                         store_text(
-                            cloud = "./",
+                            folder_path = "./",
                             file_name = "link_map_title.json",
                             text = link_map_title_dict
                         )
@@ -64,14 +67,14 @@ def main():
                             "error": e.__str__()
                         }
                         store_text(
-                            cloud = "./",
+                            folder_path = "./",
                             file_name = "error_message.json",
                             text = error_content_dict
                         )
         except Exception as e: 
             error_aside_dict[one_url] = e.__str__()
             store_text(
-                cloud = "./",
+                folder_path = "./",
                 file_name = "error_aside_message.json",
                 text = error_aside_dict
             )            
@@ -242,7 +245,9 @@ def crawl_main_content(
 
     guide_page = req_text.find("div", {"class": "devsite-article-meta nocontent".split(" ")})
     guide_page = guide_page.find("ul", {"class": "devsite-breadcrumb-list"})
-    guide_page = [i for i in guide_page.children if not(i == "\n")][2].get_text().replace("\n", "").lstrip().rstrip() 
+    guide_page = [i.get_text() for i in guide_page.children if not(i == "\n")]
+    guide_page = [i.replace("\n", "").replace("$", "").replace("'", "").lstrip().rstrip() for i in guide_page if not(i.replace("\n", "").lstrip().rstrip() in ["Home", "Technology areas"])][0]
+
 
     h1_title = "{} - {}".format(
         guide_page, 
@@ -302,25 +307,18 @@ def text_preprocessing(
     }
 
 # In[] 檔案儲存
+@folder_exists
 def store_text(
-    cloud: str, 
+    folder_path: str, 
     file_name: str,
-    text: str
+    text: str | dict
 ):
     
     """
     <Explanation TBD>
     """
 
-    assert cloud in ["gcloud", "azure", "./"], "There are two cloud provider, including 'gcloud' and 'azure'. "
-    if cloud == "gcloud":
-        data_path = config["gcloud_data_path"]
-    elif cloud == "azure":
-        pass
-    else:
-        data_path = "./"
-
-    with open(os.path.join(data_path, file_name), "w") as f:
+    with open(os.path.join(folder_path, file_name), "w") as f:
         if file_name[-4:] == ".txt":
             f.write(text)
         elif file_name[-5:] == ".json":
