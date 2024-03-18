@@ -1,0 +1,6 @@
+[submodule "monitor"]
+	path = monitor
+	url = git@github.com:Wang-Jian-An/monitor.git
+[submodule "Google-Cloud-Platform-Document"]
+	path = Google-Cloud-Platform-Document
+	url = git@github.com:Wang-Jian-An/Google-Cloud-Platform-Document.git
