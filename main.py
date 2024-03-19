@@ -41,7 +41,7 @@ def main():
                         json_content = text_preprocessing(
                             title = title,
                             text = text_result,
-                            link = one_url
+                            link = one_document["href"]
                         )
                         json_content.update(
                             guide = guide
