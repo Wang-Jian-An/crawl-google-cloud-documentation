@@ -5,6 +5,8 @@ import time
 import tqdm
 import yaml
 import random
+import opencc
+import argparse
 import requests
 import pandas as pd
 from pprint import pprint
@@ -15,9 +17,16 @@ from selenium.webdriver.common.by import By
 from utils.crawl_via_selenium import crawl_Chrome
 from monitor.folder import folder_exists
 
+parse = argparse.ArgumentParser()
+parse.add_argument("--mode", type = str, default = "development", help = "development or production")
+args = parse.parse_args()
+
 base_url = "https://cloud.google.com"
+chinese_key_url = "?hl=zh-cn"
 with open("config.yaml", encoding = "utf-8") as f:
     config = yaml.safe_load(f)
+
+converter = opencc.OpenCC("s2t")
 
 # In[] 主程式
 def main():
@@ -30,36 +39,92 @@ def main():
     link_map_title_dict = dict()
     error_content_dict = dict()
     error_aside_dict = dict()
+    title_english_map_chinese = dict()
+    title_chinese_map_english = dict()
+
+    if args.mode == "development":
+        config["url"] = config["url"][:1]
+
     for one_url in config["url"]:
         try:
             each_document = crawl_side_list(one_url = one_url)
 
+            if args.mode == "development":
+                each_document = list(each_document)[:5]
+
             with tqdm.tqdm(each_document) as t:
                 for one_document in t:
                     try:
-                        guide, title, text_result = crawl_main_content(one_main_url = one_document["href"])
-                        json_content = text_preprocessing(
-                            title = title,
-                            text = text_result,
+                        guide, english_title, english_text_result = crawl_main_content(one_main_url = one_document["href"])
+                        english_json_content = text_preprocessing(
+                            title = english_title,
+                            text = english_text_result,
                             link = one_document["href"]
                         )
-                        json_content.update(
+                        english_json_content.update(
                             guide = guide
+                        )
+                        guide, chinese_title, chinese_text_result = crawl_main_content(
+                            one_main_url = one_document["href"] + chinese_key_url, 
+                            guide_page = guide
+                        )
+                        chinese_json_content = text_preprocessing(
+                            title = chinese_title,
+                            text = chinese_text_result,
+                            link = one_document["href"] + chinese_key_url
+                        )
+                        chinese_json_content.update(
+                            guide = guide
+                        )
+
+                        # 簡體中文翻譯成繁體中文
+                        chinese_json_content["title"] = converter.convert(
+                            text = chinese_json_content["title"]
+                        )
+                        chinese_json_content["abstract"] = converter.convert(
+                            text = chinese_json_content["abstract"]
+                        )
+                        chinese_json_content["content"] = converter.convert(
+                            text = chinese_json_content["content"]
+                        )
+                        chinese_title = converter.convert(text = chinese_title)
+
+                        title_chinese_map_english[chinese_title] = english_title
+                        title_english_map_chinese[english_title] = chinese_text_result
+
+                        store_text(
+                            folder_path = "./Google-Cloud-Platform-Document/{}".format(
+                                guide
+                            ),
+                            file_name = "{}.json".format(english_title.replace("/", "_")),
+                            text = english_json_content
                         )
                         store_text(
                             folder_path = "./Google-Cloud-Platform-Document/{}".format(
                                 guide
                             ),
-                            file_name = "{}.json".format(title.replace("/", "_")),
-                            text = json_content
-                        )
+                            file_name = "{}.json".format(chinese_title.replace("/", "_")),
+                            text = chinese_json_content
+                        )                        
 
-                        link_map_title_dict[one_document["href"]] = title
+                        link_map_title_dict[one_document["href"]] = english_title
                         store_text(
                             folder_path = "./",
                             file_name = "link_map_title.json",
                             text = link_map_title_dict
                         )
+
+                        store_text(
+                            folder_path = "./",
+                            file_name = "title_chinese_map_english.json",
+                            text = title_chinese_map_english
+                        )
+                        store_text(
+                            folder_path = "./",
+                            file_name = "title_english_map_chinese.json",
+                            text = title_english_map_chinese
+                        )                        
+
                         time.sleep(random.random())
                     except Exception as e:
                         error_content_dict[one_document["name"]] = {
@@ -125,7 +190,8 @@ def crawl_side_list(
 @crawl_Chrome
 def crawl_main_content(
     driver, 
-    one_main_url: str
+    one_main_url: str,
+    guide_page: str = None
 ):
     
     """
@@ -240,14 +306,15 @@ def crawl_main_content(
     driver.get(one_main_url)
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
     req_text = driver.find_element(By.CLASS_NAME, "devsite-article")
+    
     req_text = req_text.get_attribute("outerHTML")
     req_text = BeautifulSoup(req_text, "html.parser")
 
-    guide_page = req_text.find("div", {"class": "devsite-article-meta nocontent".split(" ")})
-    guide_page = guide_page.find("ul", {"class": "devsite-breadcrumb-list"})
-    guide_page = [i.get_text() for i in guide_page.children if not(i == "\n")]
-    guide_page = [i.replace("\n", "").replace("$", "").replace("'", "").lstrip().rstrip() for i in guide_page if not(i.replace("\n", "").lstrip().rstrip() in ["Home", "Technology areas"])][0]
-
+    if not(guide_page):
+        guide_page = req_text.find("div", {"class": "devsite-article-meta nocontent".split(" ")})
+        guide_page = guide_page.find("ul", {"class": "devsite-breadcrumb-list"})
+        guide_page = [i.get_text() for i in guide_page.children if not(i == "\n")]
+        guide_page = [i.replace("\n", "").replace("$", "").replace("'", "").lstrip().rstrip() for i in guide_page if not(i.replace("\n", "").lstrip().rstrip() in ["Home", "Technology areas", "首页", "技术领域"])][0]
 
     h1_title = "{} - {}".format(
         guide_page, 
@@ -284,6 +351,9 @@ def crawl_main_content(
         "# " + h1_title + "\n" + text_result.rstrip().lstrip()
     )
 
+# one_url = "https://cloud.google.com/vertex-ai/docs/start/introduction-unified-platform?hl=zh-cn"
+# print(crawl_main_content(one_main_url = one_url))
+
 # In[] 主要內容前處理
 def text_preprocessing(
     title: str, 
@@ -318,6 +388,7 @@ def store_text(
     <Explanation TBD>
     """
 
+    print(folder_path, file_name)
     with open(os.path.join(folder_path, file_name), "w") as f:
         if file_name[-4:] == ".txt":
             f.write(text)
