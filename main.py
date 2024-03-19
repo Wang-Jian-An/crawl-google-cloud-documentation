@@ -251,7 +251,7 @@ def crawl_main_content(
 
     h1_title = "{} - {}".format(
         guide_page, 
-        req_text.find("h1").get_text()
+        req_text.find("h1").get_text().replace("\n", "").lstrip().rstrip()
     )
 
     req_text = req_text.find("div", {"class": "devsite-article-body clearfix".split(" ")})
